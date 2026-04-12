@@ -1,13 +1,10 @@
 const Book = require("../models/Book");
 
-// =========================
-// CREATE BOOK
-// =========================
 const createBook = async (req, res) => {
   try {
     const { title, author, status, pagesTotal, pagesRead, notes } = req.body;
 
-    // VALIDATION
+
     if (pagesRead > pagesTotal) {
       return res.status(400).json({
         error: "Pages read cannot be greater than total pages"
@@ -15,7 +12,7 @@ const createBook = async (req, res) => {
     }
 
     const book = await Book.create({
-      user: req.user, // IMPORTANT (matches your schema)
+      user: req.user, 
       title,
       author,
       status,
@@ -30,16 +27,14 @@ const createBook = async (req, res) => {
   }
 };
 
-// =========================
-// GET ALL (SEARCH + FILTER)
-// =========================
+
 const getBooks = async (req, res) => {
   try {
     const { search, status } = req.query;
 
     let filter = { user: req.user };
 
-    // SEARCH (title or author)
+   
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -47,7 +42,7 @@ const getBooks = async (req, res) => {
       ];
     }
 
-    // FILTER by status
+  
     if (status && status !== "All") {
       filter.status = status;
     }
@@ -60,9 +55,6 @@ const getBooks = async (req, res) => {
   }
 };
 
-// =========================
-// GET ONE (SECURE)
-// =========================
 const getBook = async (req, res) => {
   try {
     const book = await Book.findOne({
@@ -80,9 +72,6 @@ const getBook = async (req, res) => {
   }
 };
 
-// =========================
-// UPDATE BOOK (SECURE + VALIDATION)
-// =========================
 const updateBook = async (req, res) => {
   try {
     const { pagesTotal, pagesRead } = req.body;
@@ -112,9 +101,6 @@ const updateBook = async (req, res) => {
   }
 };
 
-// =========================
-// DELETE BOOK (SECURE)
-// =========================
 const deleteBook = async (req, res) => {
   try {
     const deleted = await Book.findOneAndDelete({
