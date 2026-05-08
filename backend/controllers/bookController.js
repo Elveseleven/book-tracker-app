@@ -1,9 +1,16 @@
 const Book = require("../models/Book");
 
+const toNumber = (val) => {
+  const num = Number(val);
+  return isNaN(num) ? 0 : num;
+};
+
 const createBook = async (req, res) => {
   try {
-    const { title, author, status, pagesTotal, pagesRead, notes } = req.body;
+    let { title, author, status, pagesTotal, pagesRead, notes } = req.body;
 
+    pagesTotal = toNumber(pagesTotal);
+    pagesRead = toNumber(pagesRead);
 
     if (pagesRead > pagesTotal) {
       return res.status(400).json({
@@ -12,7 +19,7 @@ const createBook = async (req, res) => {
     }
 
     const book = await Book.create({
-      user: req.user, 
+      user: req.user,
       title,
       author,
       status,
@@ -27,28 +34,22 @@ const createBook = async (req, res) => {
   }
 };
 
-
 const getBooks = async (req, res) => {
   try {
     const { search, status } = req.query;
-
     let filter = { user: req.user };
 
-   
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: "i" } },
         { author: { $regex: search, $options: "i" } }
       ];
     }
-
-  
     if (status && status !== "All") {
       filter.status = status;
     }
 
     const books = await Book.find(filter).sort({ createdAt: -1 });
-
     res.json(books);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -57,15 +58,8 @@ const getBooks = async (req, res) => {
 
 const getBook = async (req, res) => {
   try {
-    const book = await Book.findOne({
-      _id: req.params.id,
-      user: req.user
-    });
-
-    if (!book) {
-      return res.status(404).json({ error: "Book not found" });
-    }
-
+    const book = await Book.findOne({ _id: req.params.id, user: req.user });
+    if (!book) return res.status(404).json({ error: "Book not found" });
     res.json(book);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -74,7 +68,10 @@ const getBook = async (req, res) => {
 
 const updateBook = async (req, res) => {
   try {
-    const { pagesTotal, pagesRead } = req.body;
+    let { pagesTotal, pagesRead } = req.body;
+
+    pagesTotal = toNumber(pagesTotal);
+    pagesRead = toNumber(pagesRead);
 
     if (pagesRead > pagesTotal) {
       return res.status(400).json({
@@ -82,19 +79,15 @@ const updateBook = async (req, res) => {
       });
     }
 
+    const updateData = { ...req.body, pagesTotal, pagesRead };
+
     const updated = await Book.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        user: req.user
-      },
-      req.body,
-      { new: true }
+      { _id: req.params.id, user: req.user },
+      updateData,
+      { new: true, runValidators: true }
     );
 
-    if (!updated) {
-      return res.status(404).json({ error: "Book not found" });
-    }
-
+    if (!updated) return res.status(404).json({ error: "Book not found" });
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -103,15 +96,8 @@ const updateBook = async (req, res) => {
 
 const deleteBook = async (req, res) => {
   try {
-    const deleted = await Book.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user
-    });
-
-    if (!deleted) {
-      return res.status(404).json({ error: "Book not found" });
-    }
-
+    const deleted = await Book.findOneAndDelete({ _id: req.params.id, user: req.user });
+    if (!deleted) return res.status(404).json({ error: "Book not found" });
     res.json({ message: "Deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
